@@ -1,0 +1,31 @@
+﻿using System;
+using System.Text;
+using System.Text.Json.Serialization;
+
+namespace SyntheticTransactionsForExchange.DataModels
+{
+    public class MailflowHeaderData
+    {
+        [JsonInclude]
+        public int Hop { get; set; }
+        [JsonInclude]
+        public string SubmittingHost { get; set; }
+        [JsonInclude]
+        public string ReceivingHost { get; set; }
+        [JsonInclude]
+        public string Type { get; set; }
+        [JsonInclude]
+        public DateTime ReceivedTime { get; set; }
+        [JsonInclude]
+        public TimeSpan DelayTime { get; set; }
+
+        public override String ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(String.Format("The message at hop <{0}> has been submitted by <{1}> to <{2}> via <{3}>; This was received by the receiving host on <{4}> with a total latency of <{5}> seconds.", this.Hop, this.SubmittingHost, this.ReceivingHost, this.Type, this.ReceivedTime.ToString("yyyy-MM-MMTHH:mm:ss"), this.DelayTime.TotalSeconds));
+            return sb.ToString();
+        }
+
+    }
+
+}
