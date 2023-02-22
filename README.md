@@ -3,6 +3,8 @@
 This PowerShell Binary Module conveniently offers comdlets to Send, Receive and Delete mail messages from given mail servers.
 Supported protocols are GRAPH, EWS, POP, IMAP, SMTP with a variety of authentication mechanisms such as Basic, Windows Integrated, Kerberos, Modern Authentication.
 
+This is currently tested in PowerShell 7.3.2 running on Windows 11.
+
 
 ## Referenced Libraries
 POP, IMAP and SMTP cmdlets are built on top of [MimeKit](https://github.com/jstedfast/MimeKit) and [MailKit](https://github.com/jstedfast/MailKit).
