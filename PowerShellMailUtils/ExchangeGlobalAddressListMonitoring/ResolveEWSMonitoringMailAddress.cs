@@ -2,19 +2,19 @@
 using SyntheticTransactionsForExchange.DataModels;
 using SyntheticTransactionsForExchange.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.DirectoryServices.AccountManagement;
+using System.Linq;
 using System.Management.Automation;
-using System.Text.Json;
-using System.Threading;
 
-namespace SyntheticTransactionsForExchange.ExchangeMailflow
+namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressListMonitoring
 {
-    [Cmdlet("Get", "EWSMonitoringMail")]
-    [OutputType(typeof(MailflowMonitoringData))]
+    [Cmdlet("Resolve", "EWSMonitoringMailAddress")]
+    [OutputType(typeof(PerformanceMonitoringData))]
     [CmdletBinding()]
 
-    public class GetEWSMonitoringMail : Cmdlet
+    public class ResolveEWSMonitoringMailAddress : Cmdlet
     {
         /// <summary>
         /// <para type="description">The Url of the server to target with the Exchange Web Service connection. If missing autodiscover will be used.</para>
@@ -66,22 +66,10 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
         public SwitchParameter ApplicationImpersonation;
 
         /// <summary>
-        /// <para type="description">Guid to be searched for in the Subject of the Message.</para>
+        /// <para type="description">The list of recipients to whom to send the message.</para>
         /// </summary>
-        [Parameter(Mandatory = true, HelpMessage = @"Guid to be searched for in the Subject of the Message.")]
-        public Guid SubjectGuid;
-
-        /// <summary>
-        /// <para type="description">How long to wait, at most, for the message to arrive (in seconds).</para>
-        /// </summary>
-        [Parameter(Mandatory = false, HelpMessage = @"How long to wait, at most, for the message to arrive (in seconds).")]
-        public UInt16 TimeOut = 300;
-
-        /// <summary>
-        /// <para type="description">How long to pause between each attempt to fetch data from the mailbox (in seconds).</para>
-        /// </summary>
-        [Parameter(Mandatory = false, HelpMessage = @"How long to pause between each attempt to fetch data from the mailbox (in seconds).")]
-        public UInt16 SleepTimer = 5;
+        [Parameter(Mandatory = true, HelpMessage = @"The list of recipients for whom to get the Email Address from GAL.")]
+        public List<String> Recipients;
 
         /// <summary>
         /// <para type="description">If specified EWS/AutoDiscover tracing will be enabled. This is very verbose but offers a great way to see the SOAP for each operation.</para>
@@ -133,12 +121,23 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
                 throw new Exception("Mailbox address is invalid");
             }
 
-            if (SubjectGuid == null || SubjectGuid == Guid.Empty)
+            if (Recipients == null)
             {
-                throw new Exception("Guid cannot be null");
+                throw new Exception("Recipients cannot be null");
+            }
+            if (Recipients.Any() == false)
+            {
+                throw new Exception("Recipients cannot be empty");
+            }
+            foreach (string recipient in Recipients)
+            {
+                if (!RegexUtilities.IsValidEmail(recipient))
+                {
+                    throw new Exception(String.Format("The recipient <{0}> is not a valid SMTP address", recipient));
+                }
             }
 
-            MailflowMonitoringData monitoringData = new MailflowMonitoringData();
+            PerformanceMonitoringData monitoringData = new PerformanceMonitoringData(DateTime.UtcNow);
             ExchangeService EWSService = new ExchangeService(Version);
 
             try
@@ -193,66 +192,28 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
                 throw ex;
             }
 
-            DateTime receivedDateTime = new DateTime();
-            bool messageReceived = false;
-            Stopwatch timer = new Stopwatch();
-
             try
             {
-                Mailbox mbx = new Mailbox(Mailbox);
-                FolderId inboxId = new FolderId(WellKnownFolderName.Inbox, mbx);
-                Folder inbox = Folder.Bind(EWSService, inboxId);
 
-                ItemView view = new ItemView(500);
-                view.PropertySet = PropertySet.FirstClassProperties;
-                view.Traversal = ItemTraversal.Shallow;
+                Stopwatch operationTimer = new Stopwatch();
+                NameResolutionCollection resolvedNames = null;
+                operationTimer.Start();
 
-                PropertySet properySet = new PropertySet(BasePropertySet.FirstClassProperties);
-                properySet.Add(EmailMessageSchema.Subject);
-                properySet.Add(EmailMessageSchema.Body);
-                properySet.Add(EmailMessageSchema.TextBody);
-                properySet.Add(EmailMessageSchema.DateTimeSent);
-                properySet.Add(EmailMessageSchema.DateTimeReceived);
-                properySet.RequestedBodyType = BodyType.Text;
+                bool AllRecipientsResolved = true;
 
-                SearchFilter filter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, SubjectGuid.ToString());
-
-                timer.Start();
-
-                while (messageReceived == false && timer.ElapsedMilliseconds <= TimeOut * 1000)
+                foreach (string recipient in Recipients)
                 {
-                    Stopwatch operationTimer = new Stopwatch();
-                    operationTimer.Start();
-                    FindItemsResults<Item> messages = EWSService.FindItems(inboxId, filter, view);
-                    operationTimer.Stop();
-                    foreach (Item message in messages)
+                    resolvedNames = EWSService.ResolveName(recipient, ResolveNameSearchLocation.DirectoryOnly, false);
+                    if (resolvedNames == null || resolvedNames.Count == 0)
                     {
-                        WriteVerbose(String.Format("Parsing message <{0}> sent from <{1}>", message.Subject, ((EmailMessage)message).Sender));
-                        if (message.Subject.Contains(SubjectGuid.ToString()))
-                        {
-                            messageReceived = true;
-                            message.Load(properySet);
-                            receivedDateTime = message.DateTimeReceived.ToUniversalTime();
-                            monitoringData.SetDuration(Convert.ToUInt32(operationTimer.ElapsedMilliseconds));
-                            MailflowMonitoringData temp = JsonSerializer.Deserialize<MailflowMonitoringData>(message.TextBody);
-                            monitoringData.SetSendingInformation(temp.SubjectGuid, temp.TimeSent, temp.SendingProtocol);
-                            string RAWHeader = String.Join(System.Environment.NewLine, message.InternetMessageHeaders);
-                            WriteVerbose(String.Format("The header parsed is <{0}> ", RAWHeader));
-                            monitoringData.MailflowHeaderDataTable = MailUtilities.ParseMailHeader(RAWHeader);
-                            monitoringData.SetStatus(TransactionStatus.Success);
-                            message.Delete(DeleteMode.HardDelete);
-                        }
-                    }
-                    if (!messageReceived)
-                    {
-                        WriteVerbose(String.Format("Sleeping <{0}> seconds", SleepTimer));
-                        Thread.Sleep(SleepTimer * 1000);
+                        AllRecipientsResolved = false;
+                        WriteVerbose(String.Format("The address <{0}> could not be resolved", recipient));
                     }
                 }
-                if (!messageReceived)
-                {
-                    WriteWarning("The message has not been found!");
-                }
+                operationTimer.Stop();
+
+                monitoringData.SetDuration(Convert.ToUInt32(operationTimer.ElapsedMilliseconds));
+                monitoringData.SetStatus(AllRecipientsResolved);
             }
             catch (Exception ex)
             {
@@ -263,13 +224,6 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
                 WriteVerbose(String.Format("Message.............: {0}", ex.Message));
                 WriteVerbose(String.Format("Source..............: {0}", ex.Source));
                 throw ex;
-            }
-
-            monitoringData.SetReceivingInformation(SubjectGuid, receivedDateTime, Protocol.EWS);
-
-            if (messageReceived)
-            {
-                monitoringData.ComputeLatency();
             }
 
             WriteObject(monitoringData);

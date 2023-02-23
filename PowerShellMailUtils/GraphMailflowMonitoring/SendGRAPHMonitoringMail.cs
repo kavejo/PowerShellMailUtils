@@ -1,15 +1,18 @@
-﻿using Microsoft.Graph;
+﻿using Azure.Identity;
+using Microsoft.Graph;
 using SyntheticTransactionsForExchange.DataModels;
 using SyntheticTransactionsForExchange.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Management.Automation;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 
-namespace SyntheticTransactionsForExchange.GraphMailflow
+namespace SyntheticTransactionsForExchange.GraphMailflowMonitoring
 {
     [Cmdlet("Send", "GRAPHMonitoringMail")]
     [OutputType(typeof(MailflowMonitoringData))]
@@ -88,12 +91,24 @@ namespace SyntheticTransactionsForExchange.GraphMailflow
 
             MailflowMonitoringData monitoringData = new MailflowMonitoringData();
             DelegateAuthenticationProvider authProvider = null;
+            ClientSecretCredential clientSecretCredential= null;
             GraphServiceClient graphServiceClient = null;
 
             try
             {
-
                 WriteVerbose(String.Format("Using OAuth token <{0}>", AccessToken));
+
+                JwtSecurityTokenHandler jwtHandler = new JwtSecurityTokenHandler();
+                JwtSecurityToken jwtToken = jwtHandler.ReadJwtToken(AccessToken);
+                
+                if (Guid.TryParse(jwtToken.Subject, out var newGuid))
+                {
+                    WriteVerbose(String.Format("Subject is a GUID, therefore it's Application permissions. Subject: <{0}>", jwtToken.Subject));
+                }
+                else
+                {
+                    WriteVerbose(String.Format("Subject is NOT a GUID, therefore it's Delegate permissions. Subject: <{0}>", jwtToken.Subject));
+                }
 
                 authProvider = new DelegateAuthenticationProvider(async (request) =>
                 {

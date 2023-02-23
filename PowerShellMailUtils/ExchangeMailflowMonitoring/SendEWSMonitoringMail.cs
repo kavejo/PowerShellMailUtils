@@ -7,14 +7,15 @@ using System.Diagnostics;
 using System.DirectoryServices.AccountManagement;
 using System.Linq;
 using System.Management.Automation;
+using System.Text.Json;
 
-namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressList
+namespace SyntheticTransactionsForExchange.ExchangeMailflowMonitoring
 {
-    [Cmdlet("Resolve", "EWSMailAddress")]
-    [OutputType(typeof(PerformanceMonitoringData))]
+    [Cmdlet("Send", "EWSMonitoringMail")]
+    [OutputType(typeof(MailflowMonitoringData))]
     [CmdletBinding()]
 
-    public class ResolveEWSMailAddress : Cmdlet
+    public class SendEWSMonitoringMail : Cmdlet
     {
         /// <summary>
         /// <para type="description">The Url of the server to target with the Exchange Web Service connection. If missing autodiscover will be used.</para>
@@ -66,9 +67,15 @@ namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressList
         public SwitchParameter ApplicationImpersonation;
 
         /// <summary>
+        /// <para type="description">Guid to be set as Subject of the Message.</para>
+        /// </summary>
+        [Parameter(Mandatory = false, HelpMessage = @"Guid to be set as Subject of the Message.")]
+        public Guid SubjectGuid;
+
+        /// <summary>
         /// <para type="description">The list of recipients to whom to send the message.</para>
         /// </summary>
-        [Parameter(Mandatory = true, HelpMessage = @"The list of recipients for whom to get the Email Address from GAL.")]
+        [Parameter(Mandatory = true, HelpMessage = @"The list of recipients to whom to send the message.")]
         public List<String> Recipients;
 
         /// <summary>
@@ -121,6 +128,12 @@ namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressList
                 throw new Exception("Mailbox address is invalid");
             }
 
+            if (SubjectGuid == null || SubjectGuid == Guid.Empty)
+            {
+                SubjectGuid = Guid.NewGuid();
+                WriteVerbose(String.Format("Guid Generated is <{0}>", SubjectGuid.ToString()));
+            }
+
             if (Recipients == null)
             {
                 throw new Exception("Recipients cannot be null");
@@ -137,7 +150,7 @@ namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressList
                 }
             }
 
-            PerformanceMonitoringData monitoringData = new PerformanceMonitoringData(DateTime.UtcNow);
+            MailflowMonitoringData monitoringData = new MailflowMonitoringData();
             ExchangeService EWSService = new ExchangeService(Version);
 
             try
@@ -192,28 +205,37 @@ namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressList
                 throw ex;
             }
 
+            DateTime sentDateTime = DateTime.UtcNow;
+
             try
             {
+                EmailMessage message = new EmailMessage(EWSService);
+                message.Subject = SubjectGuid.ToString();
+                monitoringData.SetSendingInformation(SubjectGuid, sentDateTime, Protocol.EWS);
+                string jsonBody = JsonSerializer.Serialize(monitoringData);
+                WriteVerbose(String.Format("The Serialized body content is <{0}>", jsonBody));
+                message.Body = new MessageBody(BodyType.Text, jsonBody);
+                foreach (String recipient in Recipients)
+                {
+                    message.ToRecipients.Add(recipient);
+                }
 
                 Stopwatch operationTimer = new Stopwatch();
-                NameResolutionCollection resolvedNames = null;
                 operationTimer.Start();
-
-                bool AllRecipientsResolved = true;
-
-                foreach (string recipient in Recipients)
+                if ((EWSService.UseDefaultCredentials == true && (UserPrincipal.Current.UserPrincipalName != Mailbox)) ||
+                        (!String.IsNullOrEmpty(UserName) && (UserName != Mailbox)))
                 {
-                    resolvedNames = EWSService.ResolveName(recipient, ResolveNameSearchLocation.DirectoryOnly, false);
-                    if (resolvedNames == null || resolvedNames.Count == 0)
-                    {
-                        AllRecipientsResolved = false;
-                        WriteVerbose(String.Format("The address <{0}> could not be resolved", recipient));
-                    }
+                    Mailbox mbx = new Mailbox(Mailbox);
+                    FolderId sentItemsId = new FolderId(WellKnownFolderName.SentItems, mbx);
+                    message.SendAndSaveCopy(sentItemsId);
+                }
+                else
+                {
+                    message.Send();
                 }
                 operationTimer.Stop();
-
                 monitoringData.SetDuration(Convert.ToUInt32(operationTimer.ElapsedMilliseconds));
-                monitoringData.SetStatus(AllRecipientsResolved);
+                monitoringData.SetStatus(TransactionStatus.Success);
             }
             catch (Exception ex)
             {
@@ -227,7 +249,6 @@ namespace SyntheticTransactionsForExchange.ExchangeGlobalAddressList
             }
 
             WriteObject(monitoringData);
-            WriteVerbose(monitoringData.ToString());
             return;
         }
 

@@ -8,13 +8,13 @@ using System.DirectoryServices.AccountManagement;
 using System.Linq;
 using System.Management.Automation;
 
-namespace SyntheticTransactionsForExchange.ExchangeCalendar
+namespace SyntheticTransactionsForExchange.ExchangeCalendarMonitoring
 {
-    [Cmdlet("Get", "EWSAvailability")]
+    [Cmdlet("Get", "EWSMonitoringAvailability")]
     [OutputType(typeof(PerformanceMonitoringData))]
     [CmdletBinding()]
 
-    public class GetEWSAvailability : Cmdlet
+    public class GetEWSMonitoringAvailability : Cmdlet
     {
         /// <summary>
         /// <para type="description">The Url of the server to target with the Exchange Web Service connection. If missing autodiscover will be used.</para>

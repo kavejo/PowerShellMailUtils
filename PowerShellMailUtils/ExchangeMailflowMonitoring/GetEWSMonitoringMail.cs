@@ -2,20 +2,19 @@
 using SyntheticTransactionsForExchange.DataModels;
 using SyntheticTransactionsForExchange.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.DirectoryServices.AccountManagement;
-using System.Linq;
 using System.Management.Automation;
 using System.Text.Json;
+using System.Threading;
 
-namespace SyntheticTransactionsForExchange.ExchangeMailflow
+namespace SyntheticTransactionsForExchange.ExchangeMailflowMonitoring
 {
-    [Cmdlet("Send", "EWSMonitoringMail")]
+    [Cmdlet("Get", "EWSMonitoringMail")]
     [OutputType(typeof(MailflowMonitoringData))]
     [CmdletBinding()]
 
-    public class SendEWSMonitoringMail : Cmdlet
+    public class GetEWSMonitoringMail : Cmdlet
     {
         /// <summary>
         /// <para type="description">The Url of the server to target with the Exchange Web Service connection. If missing autodiscover will be used.</para>
@@ -67,16 +66,22 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
         public SwitchParameter ApplicationImpersonation;
 
         /// <summary>
-        /// <para type="description">Guid to be set as Subject of the Message.</para>
+        /// <para type="description">Guid to be searched for in the Subject of the Message.</para>
         /// </summary>
-        [Parameter(Mandatory = false, HelpMessage = @"Guid to be set as Subject of the Message.")]
+        [Parameter(Mandatory = true, HelpMessage = @"Guid to be searched for in the Subject of the Message.")]
         public Guid SubjectGuid;
 
         /// <summary>
-        /// <para type="description">The list of recipients to whom to send the message.</para>
+        /// <para type="description">How long to wait, at most, for the message to arrive (in seconds).</para>
         /// </summary>
-        [Parameter(Mandatory = true, HelpMessage = @"The list of recipients to whom to send the message.")]
-        public List<String> Recipients;
+        [Parameter(Mandatory = false, HelpMessage = @"How long to wait, at most, for the message to arrive (in seconds).")]
+        public UInt16 TimeOut = 300;
+
+        /// <summary>
+        /// <para type="description">How long to pause between each attempt to fetch data from the mailbox (in seconds).</para>
+        /// </summary>
+        [Parameter(Mandatory = false, HelpMessage = @"How long to pause between each attempt to fetch data from the mailbox (in seconds).")]
+        public UInt16 SleepTimer = 5;
 
         /// <summary>
         /// <para type="description">If specified EWS/AutoDiscover tracing will be enabled. This is very verbose but offers a great way to see the SOAP for each operation.</para>
@@ -130,24 +135,7 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
 
             if (SubjectGuid == null || SubjectGuid == Guid.Empty)
             {
-                SubjectGuid = Guid.NewGuid();
-                WriteVerbose(String.Format("Guid Generated is <{0}>", SubjectGuid.ToString()));
-            }
-
-            if (Recipients == null)
-            {
-                throw new Exception("Recipients cannot be null");
-            }
-            if (Recipients.Any() == false)
-            {
-                throw new Exception("Recipients cannot be empty");
-            }
-            foreach (string recipient in Recipients)
-            {
-                if (!RegexUtilities.IsValidEmail(recipient))
-                {
-                    throw new Exception(String.Format("The recipient <{0}> is not a valid SMTP address", recipient));
-                }
+                throw new Exception("Guid cannot be null");
             }
 
             MailflowMonitoringData monitoringData = new MailflowMonitoringData();
@@ -205,37 +193,66 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
                 throw ex;
             }
 
-            DateTime sentDateTime = DateTime.UtcNow;
+            DateTime receivedDateTime = new DateTime();
+            bool messageReceived = false;
+            Stopwatch timer = new Stopwatch();
 
             try
             {
-                EmailMessage message = new EmailMessage(EWSService);
-                message.Subject = SubjectGuid.ToString();
-                monitoringData.SetSendingInformation(SubjectGuid, sentDateTime, Protocol.EWS);
-                string jsonBody = JsonSerializer.Serialize(monitoringData);
-                WriteVerbose(String.Format("The Serialized body content is <{0}>", jsonBody));
-                message.Body = new MessageBody(BodyType.Text, jsonBody);
-                foreach (String recipient in Recipients)
-                {
-                    message.ToRecipients.Add(recipient);
-                }
+                Mailbox mbx = new Mailbox(Mailbox);
+                FolderId inboxId = new FolderId(WellKnownFolderName.Inbox, mbx);
+                Folder inbox = Folder.Bind(EWSService, inboxId);
 
-                Stopwatch operationTimer = new Stopwatch();
-                operationTimer.Start();
-                if ((EWSService.UseDefaultCredentials == true && (UserPrincipal.Current.UserPrincipalName != Mailbox)) ||
-                        (!String.IsNullOrEmpty(UserName) && (UserName != Mailbox)))
+                ItemView view = new ItemView(500);
+                view.PropertySet = PropertySet.FirstClassProperties;
+                view.Traversal = ItemTraversal.Shallow;
+
+                PropertySet properySet = new PropertySet(BasePropertySet.FirstClassProperties);
+                properySet.Add(EmailMessageSchema.Subject);
+                properySet.Add(EmailMessageSchema.Body);
+                properySet.Add(EmailMessageSchema.TextBody);
+                properySet.Add(EmailMessageSchema.DateTimeSent);
+                properySet.Add(EmailMessageSchema.DateTimeReceived);
+                properySet.RequestedBodyType = BodyType.Text;
+
+                SearchFilter filter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, SubjectGuid.ToString());
+
+                timer.Start();
+
+                while (messageReceived == false && timer.ElapsedMilliseconds <= TimeOut * 1000)
                 {
-                    Mailbox mbx = new Mailbox(Mailbox);
-                    FolderId sentItemsId = new FolderId(WellKnownFolderName.SentItems, mbx);
-                    message.SendAndSaveCopy(sentItemsId);
+                    Stopwatch operationTimer = new Stopwatch();
+                    operationTimer.Start();
+                    FindItemsResults<Item> messages = EWSService.FindItems(inboxId, filter, view);
+                    operationTimer.Stop();
+                    foreach (Item message in messages)
+                    {
+                        WriteVerbose(String.Format("Parsing message <{0}> sent from <{1}>", message.Subject, ((EmailMessage)message).Sender));
+                        if (message.Subject.Contains(SubjectGuid.ToString()))
+                        {
+                            messageReceived = true;
+                            message.Load(properySet);
+                            receivedDateTime = message.DateTimeReceived.ToUniversalTime();
+                            monitoringData.SetDuration(Convert.ToUInt32(operationTimer.ElapsedMilliseconds));
+                            MailflowMonitoringData temp = JsonSerializer.Deserialize<MailflowMonitoringData>(message.TextBody);
+                            monitoringData.SetSendingInformation(temp.SubjectGuid, temp.TimeSent, temp.SendingProtocol);
+                            string RAWHeader = String.Join(System.Environment.NewLine, message.InternetMessageHeaders);
+                            WriteVerbose(String.Format("The header parsed is <{0}> ", RAWHeader));
+                            monitoringData.MailflowHeaderDataTable = MailUtilities.ParseMailHeader(RAWHeader);
+                            monitoringData.SetStatus(TransactionStatus.Success);
+                            message.Delete(DeleteMode.HardDelete);
+                        }
+                    }
+                    if (!messageReceived)
+                    {
+                        WriteVerbose(String.Format("Sleeping <{0}> seconds", SleepTimer));
+                        Thread.Sleep(SleepTimer * 1000);
+                    }
                 }
-                else
+                if (!messageReceived)
                 {
-                    message.Send();
+                    WriteWarning("The message has not been found!");
                 }
-                operationTimer.Stop();
-                monitoringData.SetDuration(Convert.ToUInt32(operationTimer.ElapsedMilliseconds));
-                monitoringData.SetStatus(TransactionStatus.Success);
             }
             catch (Exception ex)
             {
@@ -248,7 +265,15 @@ namespace SyntheticTransactionsForExchange.ExchangeMailflow
                 throw ex;
             }
 
+            monitoringData.SetReceivingInformation(SubjectGuid, receivedDateTime, Protocol.EWS);
+
+            if (messageReceived)
+            {
+                monitoringData.ComputeLatency();
+            }
+
             WriteObject(monitoringData);
+            WriteVerbose(monitoringData.ToString());
             return;
         }
 

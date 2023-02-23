@@ -12,7 +12,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 
-namespace SyntheticTransactionsForExchange.LegacyMailflow
+namespace SyntheticTransactionsForExchange.LegacyMailflowMonitoring
 {
     [Cmdlet("Get", "IMAMonitoringPMail")]
     [OutputType(typeof(MailflowMonitoringData))]
