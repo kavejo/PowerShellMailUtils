@@ -22,7 +22,7 @@ namespace SyntheticTransactionsForExchange.DataModels
         public override String ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine(String.Format("The message at hop <{0}> has been submitted by <{1}> to <{2}> via <{3}>; This was received by the receiving host on <{4}> with a total latency of <{5}> seconds.", this.Hop, this.SubmittingHost, this.ReceivingHost, this.Type, this.ReceivedTime.ToString("yyyy-MM-MMTHH:mm:ss"), this.DelayTime.TotalSeconds));
+            sb.AppendLine(String.Format("Hop <{0}> from <{1}> to <{2}> via <{3}> on <{4}> took <{5}> seconds.", this.Hop, this.SubmittingHost, this.ReceivingHost, this.Type, this.ReceivedTime.ToString("yyyy-MM-MMTHH:mm:ss"), this.DelayTime.TotalSeconds));
             return sb.ToString();
         }
 

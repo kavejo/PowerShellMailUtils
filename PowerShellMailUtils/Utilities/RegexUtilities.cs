@@ -52,5 +52,11 @@ namespace SyntheticTransactionsForExchange.Utilities
                 return false;
             }
         }
+
+        public static string RemoveBetween(string s, char beginDelimiter, char endDelimiter)
+        {
+            Regex regex = new Regex(string.Format("\\{0}.*?\\{1}", beginDelimiter, endDelimiter));
+            return regex.Replace(s, string.Empty).Trim();
+        }
     }
 }

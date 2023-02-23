@@ -134,7 +134,7 @@ namespace SyntheticTransactionsForExchange.DataModels
         public override String ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine(String.Format("The message <{0}> has been sent via <{1}> at <{2}> and received via <{3}> on <{4}> with a total latency of <{5}> seconds. The cmldet took <{6}> msec to execute with a status of <{7}>.", this.SubjectGuid, this.SendingProtocol, this.TimeSent.ToString("yyyy-MM-MMTHH:mm:ss"), this.ReceivingProtocol, this.TimeReceived.ToString("yyyy-MM-MMTHH:mm:ss"), this.Latency, this.CmdletDuration, this.Status));
+            sb.AppendLine(String.Format("Message <{0}> sent via <{1}> at <{2}> and received via <{3}> on <{4}> took <{5}> seconds. Cmldet took <{6}> msec and status was <{7}>.", this.SubjectGuid, this.SendingProtocol, this.TimeSent.ToString("yyyy-MM-MMTHH:mm:ss"), this.ReceivingProtocol, this.TimeReceived.ToString("yyyy-MM-MMTHH:mm:ss"), Math.Round((double)this.Latency/1000, 0), this.CmdletDuration, this.Status));
             if (MailflowHeaderDataTable != null && MailflowHeaderDataTable.Count >= 1)
             {
                 foreach (MailflowHeaderData MailflowHeaderDataEntry in MailflowHeaderDataTable)

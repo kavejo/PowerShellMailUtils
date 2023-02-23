@@ -1,8 +1,8 @@
-﻿using SyntheticTransactionsForExchange.DataModels;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using SyntheticTransactionsForExchange.DataModels;
 
 namespace SyntheticTransactionsForExchange.Utilities
 {
@@ -22,35 +22,29 @@ namespace SyntheticTransactionsForExchange.Utilities
             {
                 GroupCollection groups = match.Groups;
 
-                string regSubmittingHost = groups[1].Value.Trim();
+                string regSubmittingHost = groups[1].Value;
                 if (String.IsNullOrEmpty(regSubmittingHost))
                 {
-                    regSubmittingHost = groups[2].Value.Substring(0, groups[2].Value.IndexOf("by ")).Trim();
+                    regSubmittingHost = groups[2].Value.Substring(0, groups[2].Value.IndexOf("by "));
                 }
-                string regReceivingHost = groups[2].Value.Trim();
+
+                string regReceivingHost = groups[2].Value;
                 if (regReceivingHost.Contains("by"))
                 {
-                    regReceivingHost = groups[2].Value.Substring(groups[2].Value.IndexOf("by ") + 3).Trim();
+                    regReceivingHost = groups[2].Value.Substring(groups[2].Value.IndexOf("by ") + 3);
                 }
-                string regType = groups[3].Value.Trim();
+
+                string regType = groups[3].Value;
+
                 string regReceivedTime = groups[4].Value.Replace(System.Environment.NewLine, "").Replace(" + ", "+").Trim();
-
-                string Type;
-                switch (regType)
-                {
-                    case "SMTP*": { Type = "SMTP"; break; }
-                    case "ESMTP*": { Type = "ESMTP"; break; }
-                    default: { Type = regType; break; }
-                }
-
                 DateTime ReceivedTime = new DateTime();
                 bool DateIsValid = DateTime.TryParse(regReceivedTime, out ReceivedTime);
 
                 MailflowHeaderData headerData = new MailflowHeaderData();
-                headerData.SubmittingHost = regSubmittingHost;
+                headerData.SubmittingHost = RegexUtilities.RemoveBetween(regSubmittingHost, '(', ')');
                 headerData.DelayTime = TimeSpan.FromSeconds(0);
-                headerData.ReceivingHost = regReceivingHost;
-                headerData.Type = Type;
+                headerData.ReceivingHost = RegexUtilities.RemoveBetween(regReceivingHost, '(', ')');
+                headerData.Type = RegexUtilities.RemoveBetween(regType, '(', ')');
                 headerData.Hop = Hop++;
                 headerData.ReceivedTime = ReceivedTime;
                 headerDataList.Add(headerData);
