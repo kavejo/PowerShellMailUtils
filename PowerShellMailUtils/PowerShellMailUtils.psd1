@@ -54,7 +54,7 @@ Description = 'This modules provides the ability to interact with mail systems s
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('Azure.Core.dll', 'Azure.Identity.dll', 'BouncyCastle.Crypto.dll', 'BouncyCastle.Cryptography.dll', 'MailKit.dll', 'Microsoft.Bcl.AsyncInterfaces.dll', 'Microsoft.Exchange.WebServices.Auth.dll', 'Microsoft.Exchange.WebServices.dll', 'Microsoft.Graph.Core.dll', 'Microsoft.Graph.dll', 'Microsoft.Identity.Client.dll', 'Microsoft.Identity.Client.Extensions.Msal.dll', 'Microsoft.IdentityModel.Abstractions.dll', 'Microsoft.IdentityModel.JsonWebTokens.dll', 'Microsoft.IdentityModel.Logging.dll', 'Microsoft.IdentityModel.Protocols.dll', 'Microsoft.IdentityModel.Protocols.OpenIdConnect.dll', 'Microsoft.IdentityModel.Tokens.dll', 'MimeKit.dll', 'PowerShellMailUtils.dll', 'PowerShellMailUtils.dll.config', 'System.Buffers.dll', 'System.ComponentModel.Annotations.dll', 'System.Diagnostics.DiagnosticSource.dll', 'System.IdentityModel.Tokens.Jwt.dll', 'System.Management.Automation.dll', 'System.Memory.Data.dll', 'System.Memory.dll', 'System.Net.Http.WinHttpHandler.dll', 'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll', 'System.Security.Cryptography.ProtectedData.dll', 'System.Security.Principal.Windows.dll', 'System.Text.Encodings.Web.dll', 'System.Text.Json.dll', 'System.Threading.Tasks.Extensions.dll', 'System.ValueTuple.dll')
+# RequiredAssemblies = @('Azure.Core.dll', 'Azure.Identity.dll', 'BouncyCastle.Crypto.dll', 'BouncyCastle.Cryptography.dll', 'MailKit.dll', 'Microsoft.Bcl.AsyncInterfaces.dll', 'Microsoft.Exchange.WebServices.Auth.dll', 'Microsoft.Exchange.WebServices.dll', 'Microsoft.Identity.Client.dll', 'Microsoft.Identity.Client.Extensions.Msal.dll', 'Microsoft.IdentityModel.Abstractions.dll', 'Microsoft.IdentityModel.JsonWebTokens.dll', 'Microsoft.IdentityModel.Logging.dll', 'Microsoft.IdentityModel.Protocols.dll', 'Microsoft.IdentityModel.Protocols.OpenIdConnect.dll', 'Microsoft.IdentityModel.Tokens.dll', 'MimeKit.dll', 'PowerShellMailUtils.dll', 'PowerShellMailUtils.dll.config', 'System.Buffers.dll', 'System.ComponentModel.Annotations.dll', 'System.Diagnostics.DiagnosticSource.dll', 'System.IdentityModel.Tokens.Jwt.dll', 'System.Management.Automation.dll', 'System.Memory.Data.dll', 'System.Memory.dll', 'System.Net.Http.WinHttpHandler.dll', 'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll', 'System.Security.Cryptography.ProtectedData.dll', 'System.Security.Principal.Windows.dll', 'System.Text.Encodings.Web.dll', 'System.Text.Json.dll', 'System.Threading.Tasks.Extensions.dll', 'System.ValueTuple.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -69,16 +69,16 @@ RequiredAssemblies = @('Azure.Core.dll', 'Azure.Identity.dll', 'BouncyCastle.Cry
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @()
+# FunctionsToExport = @()
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+# CmdletsToExport = @('Get-ApplicationAccesToken', 'Get-DelegateAccesToken', 'Get-EWSMonitoringAvailability', 'Get-EWSMonitoringMail', 'Get-IMAMonitoringPMail', 'Get-POPMonitoringMail', 'Remove-EWSAllMail', 'Remove-IMAPAllMail', 'Remove-POPAllMail', 'Resolve-EWSMonitoringMailAddress', 'Send-EWSMonitoringMail', 'Send-SMTPMonitoringMail')
 
 # Variables to export from this module
-VariablesToExport = '*'
+# VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+# AliasesToExport = @()
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

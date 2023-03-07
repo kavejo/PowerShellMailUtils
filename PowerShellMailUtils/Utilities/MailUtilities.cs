@@ -1,8 +1,8 @@
-﻿using System;
+﻿using SyntheticTransactionsForExchange.DataModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using SyntheticTransactionsForExchange.DataModels;
 
 namespace SyntheticTransactionsForExchange.Utilities
 {

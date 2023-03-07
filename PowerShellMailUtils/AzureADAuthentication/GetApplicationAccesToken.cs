@@ -116,8 +116,8 @@ namespace SyntheticTransactionsForExchange.AzureADAuthentication
             }
 
             AuthenticationResult authenticationResult;
-            DateTime now = DateTime.UtcNow;
-            X509Certificate2 authenticationCertificate = null;
+            //DateTime now = DateTime.UtcNow;
+            X509Certificate2 authenticationCertificate;
 
             try
             {
