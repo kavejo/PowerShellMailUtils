@@ -79,6 +79,7 @@
     <None Include="Artifacts\SyntheticTransactionsForExchange.pfx" />
     <None Include="Artifacts\Test\App_Permission_and_Impersonation.ps1" />
     <None Include="Artifacts\Test\Delegate_Permission.ps1" />
+    <None Include="PowerShellMailUtils.psd1" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Artifacts\CertificatePassword.txt" />
