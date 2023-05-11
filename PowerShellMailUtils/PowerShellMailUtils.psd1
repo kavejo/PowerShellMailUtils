@@ -48,7 +48,7 @@ Description = 'This modules provides the ability to interact with mail systems s
 # CLRVersion = '4.7.2'
 
 # Processor architecture (None, X86, Amd64) required by this module
-# ProcessorArchitecture = ''
+# ProcessorArchitecture = 'Amd64'
 
 # Modules that must be imported into the global environment prior to importing this module
 # RequiredModules = @()
@@ -69,10 +69,10 @@ Description = 'This modules provides the ability to interact with mail systems s
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-# FunctionsToExport = @()
+# FunctionsToExport = '*'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-# CmdletsToExport = @('Get-ApplicationAccesToken', 'Get-DelegateAccesToken', 'Get-EWSMonitoringAvailability', 'Get-EWSMonitoringMail', 'Get-IMAMonitoringPMail', 'Get-POPMonitoringMail', 'Remove-EWSAllMail', 'Remove-IMAPAllMail', 'Remove-POPAllMail', 'Resolve-EWSMonitoringMailAddress', 'Send-EWSMonitoringMail', 'Send-SMTPMonitoringMail')
+# CmdletsToExport = '*'
 
 # Variables to export from this module
 # VariablesToExport = '*'

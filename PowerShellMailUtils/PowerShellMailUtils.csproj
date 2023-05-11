@@ -78,9 +78,7 @@
     <None Include="Artifacts\SyntheticTransactionsForExchange.pfx" />
     <None Include="Artifacts\Test\App_Permission_and_Impersonation.ps1" />
     <None Include="Artifacts\Test\Delegate_Permission.ps1" />
-    <None Include="PowerShellMailUtils.psd1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="PowerShellMailUtils.psd1" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Artifacts\CertificatePassword.txt" />
@@ -88,16 +86,16 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Core">
-      <Version>1.29.0</Version>
+      <Version>1.32.0</Version>
     </PackageReference>
     <PackageReference Include="Azure.Identity">
       <Version>1.8.2</Version>
     </PackageReference>
     <PackageReference Include="BouncyCastle.Cryptography">
-      <Version>2.1.1</Version>
+      <Version>2.2.1</Version>
     </PackageReference>
     <PackageReference Include="MailKit">
-      <Version>3.6.0</Version>
+      <Version>4.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
       <Version>7.0.0</Version>
@@ -106,28 +104,25 @@
       <Version>2.2.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Identity.Client">
-      <Version>4.50.0</Version>
+      <Version>4.53.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.IdentityModel.Abstractions">
-      <Version>6.27.0</Version>
+      <Version>6.30.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect">
-      <Version>6.27.0</Version>
+      <Version>6.30.1</Version>
     </PackageReference>
     <PackageReference Include="PowerShellStandard.Library">
       <Version>5.1.1</Version>
     </PackageReference>
-    <PackageReference Include="System.ComponentModel.Annotations">
-      <Version>5.0.0</Version>
-    </PackageReference>
     <PackageReference Include="System.Diagnostics.DiagnosticSource">
-      <Version>7.0.1</Version>
+      <Version>7.0.2</Version>
     </PackageReference>
     <PackageReference Include="System.DirectoryServices.AccountManagement">
       <Version>7.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Memory.Data">
-      <Version>6.0.0</Version>
+      <Version>7.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http.WinHttpHandler">
       <Version>7.0.0</Version>
@@ -148,7 +143,7 @@
       <Version>7.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>6.0.7</Version>
+      <Version>7.0.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup />
